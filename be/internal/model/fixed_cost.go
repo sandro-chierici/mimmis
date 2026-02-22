@@ -9,4 +9,5 @@ type FixedCost struct {
 	Expense    int64  `json:"expense"`
 	Enabled    bool   `json:"enabled"`
 	Note       string `json:"note"`
+	ShadowCost bool   `json:"shadowCost"`
 }

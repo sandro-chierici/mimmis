@@ -18,7 +18,7 @@ func Connect() (*sql.DB, error) {
 		getenv("DB_PORT", "5432"),
 		getenv("DB_USER", "postgres"),
 		getenv("DB_PASSWORD", ""),
-		getenv("DB_NAME", "love_app"),
+		getenv("DB_NAME", "mimmis"),
 		getenv("DB_SSLMODE", "disable"),
 	)
 

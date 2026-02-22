@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS costs (
     note        TEXT        NOT NULL DEFAULT '',
     name        TEXT        NOT NULL,
     ref_month   INT         NOT NULL,
-    ref_year    INT         NOT NULL
+    ref_year    INT         NOT NULL,
+    shadow_cost BOOLEAN     NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS fixed_costs (
@@ -36,7 +37,8 @@ CREATE TABLE IF NOT EXISTS fixed_costs (
     apply_day   INT         NOT NULL,
     expense     BIGINT      NOT NULL,
     enabled     BOOLEAN     NOT NULL DEFAULT TRUE,
-    note        TEXT        NOT NULL DEFAULT ''
+    note        TEXT        NOT NULL DEFAULT '',
+    shadow_cost BOOLEAN     NOT NULL DEFAULT FALSE
 );
 `
 

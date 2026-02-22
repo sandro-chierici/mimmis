@@ -1,0 +1,24 @@
+
+{{+
+  const token = "test"
+  exports.defaultHeaders = {
+    'Content-Type': 'application/json',
+  };
+}}
+
+
+@host = https://localhost
+
+
+### Get all users
+GET {{host}}/api/v1/users
+...defaultHeaders
+
+
+### Get user by ID
+GET {{host}}/api/v1/users/18135bbf-84f7-471c-b798-846cf495b61f  
+...defaultHeaders
+
+
+GET {{host}}/api/v1/costs
+...defaultHeaders

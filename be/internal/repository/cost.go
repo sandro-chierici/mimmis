@@ -18,17 +18,17 @@ func NewCostRepo(db *sql.DB) *CostRepo {
 // and written back into c.ID via RETURNING.
 func (r *CostRepo) Create(c *model.Cost) error {
 	return r.db.QueryRow(
-		`INSERT INTO costs (user_id, category_id, date, total, note, name, ref_month, ref_year)
-		 VALUES ($1, NULLIF($2,''), $3, $4, $5, $6, $7, $8)
+		`INSERT INTO costs (user_id, category_id, date, total, note, name, ref_month, ref_year, shadow_cost)
+		 VALUES ($1, NULLIF($2,''), $3, $4, $5, $6, $7, $8, $9)
 		 RETURNING id`,
-		c.UserID, c.CategoryID, c.Date, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear,
+		c.UserID, c.CategoryID, c.Date, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ShadowCost,
 	).Scan(&c.ID)
 }
 
 // GetAll returns all cost entries ordered by date descending.
 func (r *CostRepo) GetAll() ([]model.Cost, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year
+		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year, shadow_cost
 		 FROM costs ORDER BY date DESC`,
 	)
 	if err != nil {
@@ -41,7 +41,7 @@ func (r *CostRepo) GetAll() ([]model.Cost, error) {
 		var c model.Cost
 		if err := rows.Scan(
 			&c.ID, &c.UserID, &c.CategoryID, &c.Date,
-			&c.Total, &c.Note, &c.Name, &c.RefMonth, &c.RefYear,
+			&c.Total, &c.Note, &c.Name, &c.RefMonth, &c.RefYear, &c.ShadowCost,
 		); err != nil {
 			return nil, err
 		}
@@ -54,9 +54,9 @@ func (r *CostRepo) GetAll() ([]model.Cost, error) {
 func (r *CostRepo) GetByID(id int32) (*model.Cost, error) {
 	var c model.Cost
 	err := r.db.QueryRow(
-		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year
+		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year, shadow_cost
 		 FROM costs WHERE id = $1`, id,
-	).Scan(&c.ID, &c.UserID, &c.CategoryID, &c.Date, &c.Total, &c.Note, &c.Name, &c.RefMonth, &c.RefYear)
+	).Scan(&c.ID, &c.UserID, &c.CategoryID, &c.Date, &c.Total, &c.Note, &c.Name, &c.RefMonth, &c.RefYear, &c.ShadowCost)
 	if err != nil {
 		return nil, err
 	}
@@ -67,9 +67,9 @@ func (r *CostRepo) GetByID(id int32) (*model.Cost, error) {
 func (r *CostRepo) Update(c *model.Cost) error {
 	res, err := r.db.Exec(
 		`UPDATE costs
-		 SET user_id=$1, category_id=NULLIF($2,''), date=$3, total=$4, note=$5, name=$6, ref_month=$7, ref_year=$8
-		 WHERE id=$9`,
-		c.UserID, c.CategoryID, c.Date, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ID,
+		 SET user_id=$1, category_id=NULLIF($2,''), date=$3, total=$4, note=$5, name=$6, ref_month=$7, ref_year=$8, shadow_cost=$9
+		 WHERE id=$10`,
+		c.UserID, c.CategoryID, c.Date, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ShadowCost, c.ID,
 	)
 	if err != nil {
 		return err

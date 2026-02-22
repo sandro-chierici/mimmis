@@ -13,4 +13,5 @@ type Cost struct {
 	Name       string    `json:"name"`
 	RefMonth   int       `json:"refMonth"`
 	RefYear    int       `json:"refYear"`
+	ShadowCost bool      `json:"shadowCost"`
 }
