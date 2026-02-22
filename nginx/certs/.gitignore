@@ -1,0 +1,7 @@
+# Keep this directory in git but never commit actual certificates or private keys.
+# They must be provided at deploy time (CI secret, secret manager, etc.).
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx

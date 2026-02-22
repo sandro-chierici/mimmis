@@ -1,0 +1,11 @@
+# exclude the compiled binary directory
+bin/
+
+# exclude local env files (secrets must come from runtime env, not the image)
+.env
+.env.*
+!.env.example
+
+# no need to send git history into the build context
+.git/
+.gitignore
