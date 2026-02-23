@@ -14,6 +14,7 @@ class Cost {
     required this.name,
     required this.refMonth,
     required this.refYear,
+    required this.shadowCost
   });
 
   /// Auto-generated integer PK from the database. 0 when creating (server sets it).
@@ -34,6 +35,8 @@ class Cost {
 
   /// Reference year (e.g. 2026).
   final int refYear;
+
+  final bool shadowCost;
 
   factory Cost.fromJson(Map<String, dynamic> json) => _$CostFromJson(json);
 

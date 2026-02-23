@@ -12,6 +12,7 @@ class FixedCost {
     required this.expense,
     required this.enabled,
     required this.note,
+    required this.shadowCost
   });
 
   /// Auto-generated integer PK from the database. 0 when creating (server sets it).
@@ -30,6 +31,8 @@ class FixedCost {
   /// Whether this recurring cost is currently active.
   final bool enabled;
   final String note;
+
+  final bool shadowCost;
 
   factory FixedCost.fromJson(Map<String, dynamic> json) =>
       _$FixedCostFromJson(json);

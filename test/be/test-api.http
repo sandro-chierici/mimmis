@@ -16,9 +16,17 @@ GET {{host}}/api/v1/users
 
 
 ### Get user by ID
-GET {{host}}/api/v1/users/18135bbf-84f7-471c-b798-846cf495b61f  
+GET {{host}}/api/v1/users/6461e0b9-588b-4ac0-a0a2-f1e65c9a2f2d
 ...defaultHeaders
 
+GET {{host}}/api/v1/costs/year/2026/month/2
+...defaultHeaders
 
-GET {{host}}/api/v1/costs
+GET {{host}}/api/v1/costs/user/df0842f7-3680-4277-acde-c71c6cbe2ee7/year/2026/month/2
+...defaultHeaders
+
+GET {{host}}/api/v1/costs/total/user/df0842f7-3680-4277-acde-c71c6cbe2ee7/year/2026/month/2
+...defaultHeaders 
+
+GET {{host}}/api/v1/costs/total/year/2026/month/2
 ...defaultHeaders

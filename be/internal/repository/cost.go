@@ -10,6 +10,12 @@ type CostRepo struct {
 	db *sql.DB
 }
 
+type CostAggregateRequest struct {
+	UserID   string
+	RefMonth int32
+	RefYear  int32
+}
+
 func NewCostRepo(db *sql.DB) *CostRepo {
 	return &CostRepo{db: db}
 }
@@ -25,11 +31,12 @@ func (r *CostRepo) Create(c *model.Cost) error {
 	).Scan(&c.ID)
 }
 
-// GetAll returns all cost entries ordered by date descending.
-func (r *CostRepo) GetAll() ([]model.Cost, error) {
+// GetAll returns all cost per period entries ordered by date descending.
+func (r *CostRepo) GetAll(refYear int32, refMonth int32) ([]model.Cost, error) {
 	rows, err := r.db.Query(
 		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year, shadow_cost
-		 FROM costs ORDER BY date DESC`,
+		 FROM costs WHERE ref_year = $1 AND ref_month = $2 ORDER BY date DESC`,
+		refYear, refMonth,
 	)
 	if err != nil {
 		return nil, err
@@ -90,4 +97,62 @@ func (r *CostRepo) Delete(id int32) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+// GetAll returns all cost entries per user and specific period ordered by date descending.
+func (r *CostRepo) GetCostsPerUser(req CostAggregateRequest) ([]model.Cost, error) {
+	rows, err := r.db.Query(
+		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year, shadow_cost
+		 FROM costs WHERE user_id = $1 AND ref_year = $2 AND ref_month = $3 ORDER BY date DESC`,
+		req.UserID, req.RefYear, req.RefMonth,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var costs []model.Cost
+	for rows.Next() {
+		var c model.Cost
+		if err := rows.Scan(
+			&c.ID, &c.UserID, &c.CategoryID, &c.Date,
+			&c.Total, &c.Note, &c.Name, &c.RefMonth, &c.RefYear, &c.ShadowCost,
+		); err != nil {
+			return nil, err
+		}
+		costs = append(costs, c)
+	}
+	return costs, rows.Err()
+}
+
+// calculates the total costs for a user in a specific month and year, excluding shadow costs.
+func (r *CostRepo) GetTotalPerUser(req CostAggregateRequest) (float64, error) {
+
+	var total float64
+	err := r.db.QueryRow(
+		`SELECT COALESCE(SUM(total), 0) FROM costs WHERE user_id = $1 AND ref_year = $2 AND ref_month = $3 AND shadow_cost = false`,
+		req.UserID, req.RefYear, req.RefMonth,
+	).Scan(&total)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
+// calculates the total costs for a user in a specific month and year, excluding shadow costs.
+func (r *CostRepo) GetTotalPerPeriod(refYear int32, refMonth int32) (float64, error) {
+
+	var total float64
+	err := r.db.QueryRow(
+		`SELECT COALESCE(SUM(total), 0) FROM costs WHERE ref_year = $1 AND ref_month = $2 AND shadow_cost = false`,
+		refYear, refMonth,
+	).Scan(&total)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }
