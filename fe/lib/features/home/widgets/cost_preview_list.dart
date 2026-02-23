@@ -70,28 +70,36 @@ class CostPreviewList extends StatelessWidget {
           else
             Container(
               decoration: BoxDecoration(
-                color: scheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: scheme.outlineVariant.withAlpha(128),
                 ),
               ),
-              child: Column(
-                children: [
-                  for (int i = 0; i < costs.length; i++) ...[
-                    if (i > 0)
-                      Divider(
-                        height: 1,
-                        indent: 16,
-                        endIndent: 16,
-                        color: scheme.outlineVariant.withAlpha(80),
-                      ),
-                    _CostRow(
-                      cost: costs[i],
-                      onTap: () => onItemTap(costs[i]),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 192),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        for (int i = 0; i < costs.length; i++) ...[
+                          if (i > 0)
+                            Divider(
+                              height: 1,
+                              indent: 16,
+                              endIndent: 16,
+                              color: scheme.outlineVariant.withAlpha(80),
+                            ),
+                          _CostRow(
+                            cost: costs[i],
+                            onTap: () => onItemTap(costs[i]),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ],
+                  ),
+                ),
               ),
             ),
         ],
@@ -114,10 +122,13 @@ class _CostRow extends StatelessWidget {
     // Total is stored in minor units (cents). Display as €.
     final amount = '€ ${(cost.total / 100).toStringAsFixed(2)}';
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
+    return Material(
+      color: cost.shadowCost
+          ? scheme.surfaceContainerHighest
+          : scheme.surfaceContainerLow,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
         children: [
@@ -161,6 +172,7 @@ class _CostRow extends StatelessWidget {
         ],
         ),
       ),
+    ),
     );
   }
 }

@@ -104,7 +104,6 @@ class CostFormNotifier extends ChangeNotifier {
           ),
         );
       } else {
-        final now = DateTime.now();
         await _costRepo.create(
           Cost(
             id: 0,

@@ -150,6 +150,6 @@ class HomeNotifier extends ChangeNotifier {
             c.refYear == _selectedDate.year)
         .toList();
       
-    return filtered.take(3).toList();
+    return filtered;
   }
 }
