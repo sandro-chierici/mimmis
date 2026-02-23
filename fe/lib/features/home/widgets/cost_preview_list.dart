@@ -7,10 +7,12 @@ class CostPreviewList extends StatelessWidget {
     super.key,
     required this.costs,
     required this.onAddTap,
+    required this.onItemTap,
   });
 
   final List<Cost> costs;
   final VoidCallback onAddTap;
+  final ValueChanged<Cost> onItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +86,10 @@ class CostPreviewList extends StatelessWidget {
                         endIndent: 16,
                         color: scheme.outlineVariant.withAlpha(80),
                       ),
-                    _CostRow(cost: costs[i]),
+                    _CostRow(
+                      cost: costs[i],
+                      onTap: () => onItemTap(costs[i]),
+                    ),
                   ],
                 ],
               ),
@@ -96,9 +101,10 @@ class CostPreviewList extends StatelessWidget {
 }
 
 class _CostRow extends StatelessWidget {
-  const _CostRow({required this.cost});
+  const _CostRow({required this.cost, required this.onTap});
 
   final Cost cost;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -106,12 +112,14 @@ class _CostRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     // Total is stored in minor units (cents). Display as €.
-    final amount =
-        '€ ${(cost.total / 100).toStringAsFixed(2)}';
+    final amount = '€ ${(cost.total / 100).toStringAsFixed(2)}';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
         children: [
           Expanded(
             child: Column(
@@ -144,7 +152,14 @@ class _CostRow extends StatelessWidget {
               color: scheme.primary,
             ),
           ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: scheme.onSurfaceVariant,
+          ),
         ],
+        ),
       ),
     );
   }

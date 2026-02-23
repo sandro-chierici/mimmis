@@ -14,6 +14,7 @@ FixedCost _$FixedCostFromJson(Map<String, dynamic> json) => FixedCost(
   expense: (json['expense'] as num).toInt(),
   enabled: json['enabled'] as bool,
   note: json['note'] as String,
+  shadowCost: (json['shadowCost'] as bool)
 );
 
 Map<String, dynamic> _$FixedCostToJson(FixedCost instance) => <String, dynamic>{
@@ -24,4 +25,5 @@ Map<String, dynamic> _$FixedCostToJson(FixedCost instance) => <String, dynamic>{
   'expense': instance.expense,
   'enabled': instance.enabled,
   'note': instance.note,
+  'shadowCost': instance.shadowCost
 };

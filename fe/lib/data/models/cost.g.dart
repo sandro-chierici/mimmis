@@ -16,6 +16,7 @@ Cost _$CostFromJson(Map<String, dynamic> json) => Cost(
   name: json['name'] as String,
   refMonth: (json['refMonth'] as num).toInt(),
   refYear: (json['refYear'] as num).toInt(),
+  shadowCost: (json['shadowCost'] as bool)
 );
 
 Map<String, dynamic> _$CostToJson(Cost instance) => <String, dynamic>{
@@ -28,4 +29,5 @@ Map<String, dynamic> _$CostToJson(Cost instance) => <String, dynamic>{
   'name': instance.name,
   'refMonth': instance.refMonth,
   'refYear': instance.refYear,
+  'shadowCost': instance.shadowCost,
 };

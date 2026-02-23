@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'home_notifier.dart';
 import 'widgets/cost_preview_list.dart';
@@ -104,9 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     SliverToBoxAdapter(
                       child: CostPreviewList(
                         costs: n.recentCosts(),
-                        onAddTap: () {
-                          // TODO: navigate to Add Cost screen
-                        },
+                        onAddTap: () => _navigateToCostForm(context, n),
+                        onItemTap: (cost) => _navigateToCostForm(context, n, cost: cost),
                       ),
                     ),
 
@@ -143,6 +143,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (picked != null) {
       n.setSelectedDate(picked);
+    }
+  }
+
+  Future<void> _navigateToCostForm(
+    BuildContext context,
+    HomeNotifier n, {
+    dynamic cost,
+  }) async {
+    final saved = await context.push<bool>('/cost-form', extra: cost);
+    if (saved == true) {
+      await n.reloadCosts();
     }
   }
 }

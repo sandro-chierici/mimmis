@@ -75,7 +75,7 @@ class HomeNotifier extends ChangeNotifier {
     try {
       final results = await Future.wait([
         _userRepo.getAll(),
-        _costRepo.getAll(),
+        _costRepo.getAllPerPeriod(_selectedDate.year, _selectedDate.month),
       ]);
       _users = results[0] as List<User>;
       _costs = results[1] as List<Cost>;
@@ -94,6 +94,8 @@ class HomeNotifier extends ChangeNotifier {
       _error = e.toString();
       log('HomeNotifier.init: $e', name: 'HomeNotifier');
     } finally {
+
+
       _setLoading(false);
     }
   }
@@ -105,7 +107,7 @@ class HomeNotifier extends ChangeNotifier {
   Future<void> reloadCosts() async {
     _setLoading(true);
     try {
-      _costs = await _costRepo.getAll();
+      _costs = await _costRepo.getAllPerPeriod(_selectedDate.year, _selectedDate.month);
       _error = null;
     } catch (e) {
       _error = e.toString();

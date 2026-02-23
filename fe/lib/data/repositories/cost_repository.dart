@@ -21,6 +21,52 @@ class CostRepository {
     }
   }
 
+  Future<List<Cost>> getAllPerPeriod(int year, int month) async {
+    try {
+      final json = await _client.get('/api/v1/costs/year/$year/month/$month') as List<dynamic>;
+      return json
+          .cast<Map<String, dynamic>>()
+          .map(Cost.fromJson)
+          .toList();
+    } catch (e) {
+      log('CostRepository.getAllPerPeriod: $e', name: 'CostRepository');
+      rethrow;
+    }
+  }
+
+  Future<List<Cost>> getAllPerUser(String userId, int year, int month) async {
+    try {
+      final json = await _client.get('/api/v1/costs/user/$userId/year/$year/month/$month') as List<dynamic>;
+      return json
+          .cast<Map<String, dynamic>>()
+          .map(Cost.fromJson)
+          .toList();
+    } catch (e) {
+      log('CostRepository.getAllPerUser: $e', name: 'CostRepository');
+      rethrow;
+    }
+  }
+
+  Future<double> getTotalPerUser(String userId, int year, int month) async { 
+    try {
+      final json = await _client.get('/api/v1/costs/total/user/$userId/year/$year/month/$month') as Map<String, dynamic>;
+      return json['total'] as double;
+    } catch (e) {
+      log('CostRepository.getTotalPerUser: $e', name: 'CostRepository');
+      rethrow;
+    }
+  }
+
+  Future<double> getTotal(int year, int month) async { 
+    try {
+      final json = await _client.get('/api/v1/costs/total/year/$year/month/$month') as Map<String, dynamic>;
+      return json['total'] as double;
+    } catch (e) {
+      log('CostRepository.getTotal: $e', name: 'CostRepository');
+      rethrow;
+    }
+  }
+
   Future<Cost> getById(int id) async {
     try {
       final json =
