@@ -28,9 +28,6 @@ WORKDIR /app
 # Copy only the compiled binary from the builder stage.
 COPY --from=builder /app/bin/api .
 
-# The API listens on 8080 by default (overridable via PORT env var).
-EXPOSE 8080
-
 # Run as a non-root user (distroless ships uid 65532 "nonroot" by default).
 USER nonroot:nonroot
 
