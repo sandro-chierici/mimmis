@@ -25,9 +25,9 @@ func NewCostRepo(db *sql.DB) *CostRepo {
 func (r *CostRepo) Create(c *model.Cost) error {
 	return r.db.QueryRow(
 		`INSERT INTO costs (user_id, category_id, date, total, note, name, ref_month, ref_year, shadow_cost)
-		 VALUES ($1, NULLIF($2,''), $3, $4, $5, $6, $7, $8, $9)
+		 VALUES ($1, NULLIF($2,''), NOW(), $3, $4, $5, $6, $7, $8)
 		 RETURNING id`,
-		c.UserID, c.CategoryID, c.Date, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ShadowCost,
+		c.UserID, c.CategoryID, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ShadowCost,
 	).Scan(&c.ID)
 }
 
@@ -74,9 +74,9 @@ func (r *CostRepo) GetByID(id int32) (*model.Cost, error) {
 func (r *CostRepo) Update(c *model.Cost) error {
 	res, err := r.db.Exec(
 		`UPDATE costs
-		 SET user_id=$1, category_id=NULLIF($2,''), date=$3, total=$4, note=$5, name=$6, ref_month=$7, ref_year=$8, shadow_cost=$9
-		 WHERE id=$10`,
-		c.UserID, c.CategoryID, c.Date, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ShadowCost, c.ID,
+		 SET user_id=$1, category_id=NULLIF($2,''), date=NOW(), total=$3, note=$4, name=$5, ref_month=$6, ref_year=$7, shadow_cost=$8
+		 WHERE id=$9`,
+		c.UserID, c.CategoryID, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ShadowCost, c.ID,
 	)
 	if err != nil {
 		return err

@@ -148,8 +148,8 @@ class HomeNotifier extends ChangeNotifier {
             c.userId == _selectedUser!.userId &&
             c.refMonth == _selectedDate.month &&
             c.refYear == _selectedDate.year)
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+        .toList();
+      
     return filtered.take(3).toList();
   }
 }

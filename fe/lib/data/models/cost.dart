@@ -8,7 +8,6 @@ class Cost {
     required this.id,
     required this.userId,
     required this.categoryId,
-    required this.date,
     required this.total,
     required this.note,
     required this.name,
@@ -23,7 +22,6 @@ class Cost {
 
   /// Optional FK to Category. Empty string means no category.
   final String categoryId;
-  final DateTime date;
 
   /// Amount in minor currency units (e.g. cents).
   final int total;
