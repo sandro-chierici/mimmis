@@ -23,6 +23,30 @@ class CostFormScreen extends StatelessWidget {
             backgroundColor: scheme.surface,
             surfaceTintColor: Colors.transparent,
             automaticallyImplyLeading: false,
+            actions: [
+              if (n.isEditing)
+                IconButton(
+                  tooltip: 'Delete cost',
+                  onPressed: n.isDeleting
+                      ? null
+                      : () async {
+                          final ok = await n.delete();
+                          if (ok && context.mounted) {
+                            context.pop(true);
+                          }
+                        },
+                  icon: n.isDeleting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.red,
+                          ),
+                        )
+                      : const Icon(Icons.delete_rounded, color: Colors.red),
+                ),
+            ],
             title: Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,

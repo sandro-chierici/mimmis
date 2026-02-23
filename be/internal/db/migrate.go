@@ -21,10 +21,10 @@ CREATE TABLE IF NOT EXISTS costs (
     id          SERIAL      PRIMARY KEY,
     user_id     TEXT        NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     category_id VARCHAR(50) REFERENCES category(id) ON DELETE SET NULL,
-    date        TIMESTAMPTZ NOT NULL,
     total       BIGINT      NOT NULL,
     note        TEXT        NOT NULL DEFAULT '',
     name        TEXT        NOT NULL,
+    ref_day     INT         NOT NULL,
     ref_month   INT         NOT NULL,
     ref_year    INT         NOT NULL,
     shadow_cost BOOLEAN     NOT NULL DEFAULT FALSE
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS fixed_costs (
     user_id     TEXT        NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     category_id VARCHAR(50) REFERENCES category(id) ON DELETE SET NULL,
     apply_day   INT         NOT NULL,
-    expense     BIGINT      NOT NULL,
+    cost        BIGINT      NOT NULL,
     enabled     BOOLEAN     NOT NULL DEFAULT TRUE,
     note        TEXT        NOT NULL DEFAULT '',
     shadow_cost BOOLEAN     NOT NULL DEFAULT FALSE

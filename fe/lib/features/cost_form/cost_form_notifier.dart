@@ -35,10 +35,12 @@ class CostFormNotifier extends ChangeNotifier {
 
   bool _shadowCost = false;
   bool _isSaving = false;
+  bool _isDeleting = false;
   String? _error;
 
   bool get isEditing => _initialCost != null;
   bool get isSaving => _isSaving;
+  bool get isDeleting => _isDeleting;
   String? get error => _error;
   bool get shadowCost => _shadowCost;
   String? get selectedUserName => _selectedUser?.name;
@@ -95,6 +97,7 @@ class CostFormNotifier extends ChangeNotifier {
             total: totalCents,
             note: noteCtrl.text.trim(),
             name: name,
+            refDay: initial.refDay,
             refMonth: initial.refMonth,
             refYear: initial.refYear,
             shadowCost: _shadowCost,
@@ -110,6 +113,7 @@ class CostFormNotifier extends ChangeNotifier {
             total: totalCents,
             note: noteCtrl.text.trim(),
             name: name,
+            refDay: _selectedDate.day,
             refMonth: _selectedDate.month,
             refYear: _selectedDate.year,
             shadowCost: _shadowCost,
@@ -123,6 +127,28 @@ class CostFormNotifier extends ChangeNotifier {
       return false;
     } finally {
       _isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  /// Returns `true` if the deletion was successful.
+  Future<bool> delete() async {
+    final initial = _initialCost;
+    if (initial == null) return false;
+
+    _isDeleting = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _costRepo.delete(initial.id);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      log('CostFormNotifier.delete: $e', name: 'CostFormNotifier');
+      return false;
+    } finally {
+      _isDeleting = false;
       notifyListeners();
     }
   }

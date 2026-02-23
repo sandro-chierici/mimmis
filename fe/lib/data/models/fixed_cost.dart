@@ -9,7 +9,7 @@ class FixedCost {
     required this.userId,
     required this.categoryId,
     required this.applyDay,
-    required this.expense,
+    required this.cost,
     required this.enabled,
     required this.note,
     required this.shadowCost
@@ -22,11 +22,11 @@ class FixedCost {
   /// Optional FK to Category. Empty string means no category.
   final String categoryId;
 
-  /// Day of the month the expense applies (1–31).
+  /// Day of the month the cost applies (1–31).
   final int applyDay;
 
   /// Amount in minor currency units (e.g. cents).
-  final int expense;
+  final int cost;
 
   /// Whether this recurring cost is currently active.
   final bool enabled;

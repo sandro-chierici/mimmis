@@ -11,6 +11,7 @@ class Cost {
     required this.total,
     required this.note,
     required this.name,
+    required this.refDay,
     required this.refMonth,
     required this.refYear,
     required this.shadowCost
@@ -27,10 +28,11 @@ class Cost {
   final int total;
   final String note;
   final String name;
-
+  final int refDay;
   /// Reference month (1–12).
   final int refMonth;
 
+  /// Reference day of the month (1–31).
   /// Reference year (e.g. 2026).
   final int refYear;
 

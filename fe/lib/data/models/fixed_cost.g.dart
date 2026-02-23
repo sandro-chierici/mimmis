@@ -11,7 +11,7 @@ FixedCost _$FixedCostFromJson(Map<String, dynamic> json) => FixedCost(
   userId: json['userId'] as String,
   categoryId: json['categoryId'] as String,
   applyDay: (json['applyDay'] as num).toInt(),
-  expense: (json['expense'] as num).toInt(),
+  cost: (json['cost'] as num).toInt(),
   enabled: json['enabled'] as bool,
   note: json['note'] as String,
   shadowCost: (json['shadowCost'] as bool)
@@ -22,7 +22,7 @@ Map<String, dynamic> _$FixedCostToJson(FixedCost instance) => <String, dynamic>{
   'userId': instance.userId,
   'categoryId': instance.categoryId,
   'applyDay': instance.applyDay,
-  'expense': instance.expense,
+  'cost': instance.cost,
   'enabled': instance.enabled,
   'note': instance.note,
   'shadowCost': instance.shadowCost

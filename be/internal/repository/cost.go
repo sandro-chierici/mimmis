@@ -24,18 +24,18 @@ func NewCostRepo(db *sql.DB) *CostRepo {
 // and written back into c.ID via RETURNING.
 func (r *CostRepo) Create(c *model.Cost) error {
 	return r.db.QueryRow(
-		`INSERT INTO costs (user_id, category_id, date, total, note, name, ref_month, ref_year, shadow_cost)
-		 VALUES ($1, NULLIF($2,''), NOW(), $3, $4, $5, $6, $7, $8)
+		`INSERT INTO costs (user_id, category_id, total, note, name, ref_day, ref_month, ref_year, shadow_cost)
+		 VALUES ($1, NULLIF($2,''), $3, $4, $5, $6, $7, $8, $9)
 		 RETURNING id`,
-		c.UserID, c.CategoryID, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ShadowCost,
+		c.UserID, c.CategoryID, c.Total, c.Note, c.Name, c.RefDay, c.RefMonth, c.RefYear, c.ShadowCost,
 	).Scan(&c.ID)
 }
 
 // GetAll returns all cost per period entries ordered by date descending.
 func (r *CostRepo) GetAll(refYear int32, refMonth int32) ([]model.Cost, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year, shadow_cost
-		 FROM costs WHERE ref_year = $1 AND ref_month = $2 ORDER BY date DESC`,
+		`SELECT id, user_id, COALESCE(category_id,''), total, note, name, ref_day, ref_month, ref_year, shadow_cost
+		 FROM costs WHERE ref_year = $1 AND ref_month = $2 ORDER BY ref_day DESC`,
 		refYear, refMonth,
 	)
 	if err != nil {
@@ -47,8 +47,8 @@ func (r *CostRepo) GetAll(refYear int32, refMonth int32) ([]model.Cost, error) {
 	for rows.Next() {
 		var c model.Cost
 		if err := rows.Scan(
-			&c.ID, &c.UserID, &c.CategoryID, &c.Date,
-			&c.Total, &c.Note, &c.Name, &c.RefMonth, &c.RefYear, &c.ShadowCost,
+			&c.ID, &c.UserID, &c.CategoryID,
+			&c.Total, &c.Note, &c.Name, &c.RefDay, &c.RefMonth, &c.RefYear, &c.ShadowCost,
 		); err != nil {
 			return nil, err
 		}
@@ -61,9 +61,9 @@ func (r *CostRepo) GetAll(refYear int32, refMonth int32) ([]model.Cost, error) {
 func (r *CostRepo) GetByID(id int32) (*model.Cost, error) {
 	var c model.Cost
 	err := r.db.QueryRow(
-		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year, shadow_cost
+		`SELECT id, user_id, COALESCE(category_id,''), total, note, name, ref_day, ref_month, ref_year, shadow_cost
 		 FROM costs WHERE id = $1`, id,
-	).Scan(&c.ID, &c.UserID, &c.CategoryID, &c.Date, &c.Total, &c.Note, &c.Name, &c.RefMonth, &c.RefYear, &c.ShadowCost)
+	).Scan(&c.ID, &c.UserID, &c.CategoryID, &c.Total, &c.Note, &c.Name, &c.RefDay, &c.RefMonth, &c.RefYear, &c.ShadowCost)
 	if err != nil {
 		return nil, err
 	}
@@ -74,9 +74,9 @@ func (r *CostRepo) GetByID(id int32) (*model.Cost, error) {
 func (r *CostRepo) Update(c *model.Cost) error {
 	res, err := r.db.Exec(
 		`UPDATE costs
-		 SET user_id=$1, category_id=NULLIF($2,''), date=NOW(), total=$3, note=$4, name=$5, ref_month=$6, ref_year=$7, shadow_cost=$8
-		 WHERE id=$9`,
-		c.UserID, c.CategoryID, c.Total, c.Note, c.Name, c.RefMonth, c.RefYear, c.ShadowCost, c.ID,
+		 SET user_id=$1, category_id=NULLIF($2,''), total=$3, note=$4, name=$5, ref_day=$6, ref_month=$7, ref_year=$8, shadow_cost=$9
+		 WHERE id=$10`,
+		c.UserID, c.CategoryID, c.Total, c.Note, c.Name, c.RefDay, c.RefMonth, c.RefYear, c.ShadowCost, c.ID,
 	)
 	if err != nil {
 		return err
@@ -102,8 +102,8 @@ func (r *CostRepo) Delete(id int32) error {
 // GetAll returns all cost entries per user and specific period ordered by date descending.
 func (r *CostRepo) GetCostsPerUser(req CostAggregateRequest) ([]model.Cost, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user_id, COALESCE(category_id,''), date, total, note, name, ref_month, ref_year, shadow_cost
-		 FROM costs WHERE user_id = $1 AND ref_year = $2 AND ref_month = $3 ORDER BY date DESC`,
+		`SELECT id, user_id, COALESCE(category_id,''), total, note, name, ref_day, ref_month, ref_year, shadow_cost
+		 FROM costs WHERE user_id = $1 AND ref_year = $2 AND ref_month = $3 ORDER BY ref_day DESC`,
 		req.UserID, req.RefYear, req.RefMonth,
 	)
 	if err != nil {
@@ -115,8 +115,8 @@ func (r *CostRepo) GetCostsPerUser(req CostAggregateRequest) ([]model.Cost, erro
 	for rows.Next() {
 		var c model.Cost
 		if err := rows.Scan(
-			&c.ID, &c.UserID, &c.CategoryID, &c.Date,
-			&c.Total, &c.Note, &c.Name, &c.RefMonth, &c.RefYear, &c.ShadowCost,
+			&c.ID, &c.UserID, &c.CategoryID,
+			&c.Total, &c.Note, &c.Name, &c.RefDay, &c.RefMonth, &c.RefYear, &c.ShadowCost,
 		); err != nil {
 			return nil, err
 		}

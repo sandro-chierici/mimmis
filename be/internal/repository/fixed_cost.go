@@ -18,17 +18,17 @@ func NewFixedCostRepo(db *sql.DB) *FixedCostRepo {
 // and written back into fc.ID via RETURNING.
 func (r *FixedCostRepo) Create(fc *model.FixedCost) error {
 	return r.db.QueryRow(
-		`INSERT INTO fixed_costs (user_id, category_id, apply_day, expense, enabled, note, shadow_cost)
+		`INSERT INTO fixed_costs (user_id, category_id, apply_day, cost, enabled, note, shadow_cost)
 		 VALUES ($1, NULLIF($2,''), $3, $4, $5, $6, $7)
 		 RETURNING id`,
-		fc.UserID, fc.CategoryID, fc.ApplyDay, fc.Expense, fc.Enabled, fc.Note, fc.ShadowCost,
+		fc.UserID, fc.CategoryID, fc.ApplyDay, fc.Cost, fc.Enabled, fc.Note, fc.ShadowCost,
 	).Scan(&fc.ID)
 }
 
 // GetAll returns all fixed cost entries.
 func (r *FixedCostRepo) GetAll() ([]model.FixedCost, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user_id, COALESCE(category_id,''), apply_day, expense, enabled, note, shadow_cost	
+		`SELECT id, user_id, COALESCE(category_id,''), apply_day, cost, enabled, note, shadow_cost	
 		 FROM fixed_costs ORDER BY apply_day`,
 	)
 	if err != nil {
@@ -40,7 +40,7 @@ func (r *FixedCostRepo) GetAll() ([]model.FixedCost, error) {
 	for rows.Next() {
 		var fc model.FixedCost
 		if err := rows.Scan(
-			&fc.ID, &fc.UserID, &fc.CategoryID, &fc.ApplyDay, &fc.Expense, &fc.Enabled, &fc.Note, &fc.ShadowCost,
+			&fc.ID, &fc.UserID, &fc.CategoryID, &fc.ApplyDay, &fc.Cost, &fc.Enabled, &fc.Note, &fc.ShadowCost,
 		); err != nil {
 			return nil, err
 		}
@@ -53,9 +53,9 @@ func (r *FixedCostRepo) GetAll() ([]model.FixedCost, error) {
 func (r *FixedCostRepo) GetByID(id int32) (*model.FixedCost, error) {
 	var fc model.FixedCost
 	err := r.db.QueryRow(
-		`SELECT id, user_id, COALESCE(category_id,''), apply_day, expense, enabled, note, shadow_cost
+		`SELECT id, user_id, COALESCE(category_id,''), apply_day, cost, enabled, note, shadow_cost
 		 FROM fixed_costs WHERE id = $1`, id,
-	).Scan(&fc.ID, &fc.UserID, &fc.CategoryID, &fc.ApplyDay, &fc.Expense, &fc.Enabled, &fc.Note, &fc.ShadowCost)
+	).Scan(&fc.ID, &fc.UserID, &fc.CategoryID, &fc.ApplyDay, &fc.Cost, &fc.Enabled, &fc.Note, &fc.ShadowCost)
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +66,9 @@ func (r *FixedCostRepo) GetByID(id int32) (*model.FixedCost, error) {
 func (r *FixedCostRepo) Update(fc *model.FixedCost) error {
 	res, err := r.db.Exec(
 		`UPDATE fixed_costs
-		 SET user_id=$1, category_id=NULLIF($2,''), apply_day=$3, expense=$4, enabled=$5, note=$6, shadow_cost=$7
+		 SET user_id=$1, category_id=NULLIF($2,''), apply_day=$3, cost=$4, enabled=$5, note=$6, shadow_cost=$7
 		 WHERE id=$8`,
-		fc.UserID, fc.CategoryID, fc.ApplyDay, fc.Expense, fc.Enabled, fc.Note, fc.ShadowCost, fc.ID,
+		fc.UserID, fc.CategoryID, fc.ApplyDay, fc.Cost, fc.Enabled, fc.Note, fc.ShadowCost, fc.ID,
 	)
 	if err != nil {
 		return err
