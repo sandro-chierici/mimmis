@@ -34,6 +34,36 @@ stringData:
   POSTGRES_USER: "postgres"
   POSTGRES_PASSWORD: "postgres"
   POSTGRES_DB: "mimmis"
+  # pgAdmin credentials
+  PGADMIN_DEFAULT_EMAIL: "admin@mimmis.local"
+  PGADMIN_DEFAULT_PASSWORD: "changeme_pgadmin"
+
+---
+# ConfigMap for pgAdmin server configuration
+# Pre-configures PostgreSQL connection
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgadmin-config
+  namespace: mimmis
+data:
+  servers.json: |
+    {
+      "Servers": {
+        "1": {
+          "Name": "Mimmis PostgreSQL",
+          "Group": "Production",
+          "Host": "postgres-service",
+          "Port": 5432,
+          "MaintenanceDB": "mimmis",
+          "Username": "postgres",
+          "SSLMode": "disable",
+          "PassFile": "/pgpass"
+        }
+      }
+    }
+  pgpass: |
+    postgres-service:5432:mimmis:postgres:postgres
 
 ---
 # PersistentVolumeClaim for PostgreSQL data
@@ -148,6 +178,122 @@ spec:
     name: postgres
   selector:
     app: postgres
+
+---
+# PersistentVolumeClaim for pgAdmin data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pgadmin-pvc
+  namespace: mimmis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # storageClassName: standard  # Uncomment and set your storage class
+
+---
+# pgAdmin Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: mimmis
+  labels:
+    app: pgadmin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      containers:
+      - name: pgadmin
+        image: dpage/pgadmin4:latest
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: PGADMIN_DEFAULT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: mimmis-secret
+              key: PGADMIN_DEFAULT_EMAIL
+        - name: PGADMIN_DEFAULT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mimmis-secret
+              key: PGADMIN_DEFAULT_PASSWORD
+        - name: PGADMIN_CONFIG_SERVER_MODE
+          value: "True"
+        - name: PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED
+          value: "False"
+        volumeMounts:
+        - name: pgadmin-storage
+          mountPath: /var/lib/pgadmin
+        - name: pgadmin-config
+          mountPath: /pgadmin4/servers.json
+          subPath: servers.json
+          readOnly: true
+        - name: pgadmin-config
+          mountPath: /pgpass
+          subPath: pgpass
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /misc/ping
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /misc/ping
+            port: 80
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: pgadmin-storage
+        persistentVolumeClaim:
+          claimName: pgadmin-pvc
+      - name: pgadmin-config
+        configMap:
+          name: pgadmin-config
+
+---
+# pgAdmin Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin-service
+  namespace: mimmis
+  labels:
+    app: pgadmin
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: pgadmin
 
 ---
 # Backend API Deployment (3 replicas)
@@ -373,6 +519,15 @@ spec:
   - host: api.yourdomain.com  # Replace with your actual domain
     http:
       paths:
+      # pgAdmin UI - accessible at https://api.yourdomain.com/pgadmin/
+      - path: /pgadmin
+        pathType: Prefix
+        backend:
+          service:
+            name: pgadmin-service
+            port:
+              number: 80
+      # Main API - default path
       - path: /
         pathType: Prefix
         backend:
@@ -501,11 +656,61 @@ spec:
   policyTypes:
   - Ingress
   ingress:
-  # Only allow traffic from API pods
+  # Allow traffic from API pods
   - from:
     - podSelector:
         matchLabels:
           app: mimmis-api
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow traffic from pgAdmin
+  - from:
+    - podSelector:
+        matchLabels:
+          app: pgadmin
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# NetworkPolicy for pgAdmin
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pgadmin-network-policy
+  namespace: mimmis
+spec:
+  podSelector:
+    matchLabels:
+      app: pgadmin
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow connection to PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
     ports:
     - protocol: TCP
       port: 5432
