@@ -30,9 +30,9 @@ metadata:
 type: Opaque
 stringData:
   DB_USER: "postgres"
-  DB_PASSWORD: "changeme_in_production"
+  DB_PASSWORD: "postgres"
   POSTGRES_USER: "postgres"
-  POSTGRES_PASSWORD: "changeme_in_production"
+  POSTGRES_PASSWORD: "postgres"
   POSTGRES_DB: "mimmis"
 
 ---
@@ -183,7 +183,7 @@ spec:
           echo "PostgreSQL is ready!"
       containers:
       - name: api
-        image: mimmis-api:latest  # Replace with your actual image registry/tag
+        image: ha-pub.mxnhd3k7jxkm1j3.itbg.svcff.mycloudplatform.cloud/mimmis/mimmis-api:latest
         ports:
         - containerPort: 6000
           name: http
@@ -286,17 +286,28 @@ spec:
 
 ---
 # Ingress with API Gateway and WAF (ModSecurity)
+# SSL TERMINATION: HTTPS -> Ingress (SSL terminates here) -> HTTP -> Service
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: mimmis-ingress
   namespace: mimmis
   annotations:
-    # API Gateway and routing
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # === SSL/TLS TERMINATION CONFIGURATION ===
+    # Force all HTTP traffic to redirect to HTTPS (301 permanent redirect)
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     
-    # WAF - ModSecurity with OWASP Core Rule Set
+    # Backend communication uses HTTP (SSL terminates at ingress)
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    
+    # SSL/TLS certificate configuration
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If using cert-manager
+    
+    # === API GATEWAY AND ROUTING ===
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    
+    # === WAF - ModSecurity with OWASP Core Rule Set ===
     nginx.ingress.kubernetes.io/enable-modsecurity: "true"
     nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
     nginx.ingress.kubernetes.io/modsecurity-transaction-id: "$request_id"
@@ -316,35 +327,48 @@ metadata:
       SecAction "id:1002,phase:1,nolog,pass,initcol:ip=%{REMOTE_ADDR},setvar:ip.requests=+1,expirevar:ip.requests=60"
       SecRule IP:REQUESTS "@gt 100" "id:1003,phase:1,deny,status:429,msg:'Rate limit exceeded'"
     
-    # Rate limiting (alternative/additional layer)
+    # === RATE LIMITING ===
     nginx.ingress.kubernetes.io/limit-rps: "10"
     nginx.ingress.kubernetes.io/limit-connections: "20"
     
-    # Body size limit
+    # === REQUEST LIMITS ===
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     
-    # Timeouts
+    # === TIMEOUTS ===
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
     
-    # Security headers
+    # === SECURITY HEADERS ===
     nginx.ingress.kubernetes.io/configuration-snippet: |
+      # Enforce HTTPS with HSTS (HTTP Strict Transport Security)
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+      # Prevent clickjacking
       more_set_headers "X-Frame-Options: DENY";
+      # Prevent MIME type sniffing
       more_set_headers "X-Content-Type-Options: nosniff";
+      # XSS protection
       more_set_headers "X-XSS-Protection: 1; mode=block";
+      # Referrer policy
       more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      # Content Security Policy
       more_set_headers "Content-Security-Policy: default-src 'self'";
-      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
-    
-    # SSL/TLS configuration
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If using cert-manager
+      # Indicate HTTPS usage
+      more_set_headers "X-Forwarded-Proto: https";
 spec:
   ingressClassName: nginx
+  
+  # === SSL/TLS TERMINATION ===
+  # Ingress terminates SSL here. Traffic flow:
+  # 1. Client -> HTTPS (443) -> Ingress (SSL terminates)
+  # 2. Ingress -> HTTP (80) -> mimmis-api-service
+  # 3. HTTP requests are automatically redirected to HTTPS (see annotations)
   tls:
   - hosts:
     - api.yourdomain.com  # Replace with your actual domain
-    secretName: mimmis-tls-secret
+    secretName: mimmis-tls-secret  # TLS certificate stored here
+  
+  # === ROUTING RULES ===
   rules:
   - host: api.yourdomain.com  # Replace with your actual domain
     http:
@@ -355,52 +379,52 @@ spec:
           service:
             name: mimmis-api-service
             port:
-              number: 80
+              number: 80  # Backend service uses HTTP (SSL already terminated)
 
 ---
 # HorizontalPodAutoscaler for API (optional but recommended)
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: mimmis-api-hpa
-  namespace: mimmis
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: mimmis-api
-  minReplicas: 3
-  maxReplicas: 10
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-  behavior:
-    scaleDown:
-      stabilizationWindowSeconds: 300
-      policies:
-      - type: Percent
-        value: 50
-        periodSeconds: 60
-    scaleUp:
-      stabilizationWindowSeconds: 0
-      policies:
-      - type: Percent
-        value: 100
-        periodSeconds: 30
-      - type: Pods
-        value: 2
-        periodSeconds: 30
-      selectPolicy: Max
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: mimmis-api-hpa
+#   namespace: mimmis
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: mimmis-api
+#   minReplicas: 3
+#   maxReplicas: 10
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       target:
+#         type: Utilization
+#         averageUtilization: 70
+#   - type: Resource
+#     resource:
+#       name: memory
+#       target:
+#         type: Utilization
+#         averageUtilization: 80
+#   behavior:
+#     scaleDown:
+#       stabilizationWindowSeconds: 300
+#       policies:
+#       - type: Percent
+#         value: 50
+#         periodSeconds: 60
+#     scaleUp:
+#       stabilizationWindowSeconds: 0
+#       policies:
+#       - type: Percent
+#         value: 100
+#         periodSeconds: 30
+#       - type: Pods
+#         value: 2
+#         periodSeconds: 30
+#       selectPolicy: Max
 
 ---
 # PodDisruptionBudget to ensure availability during updates

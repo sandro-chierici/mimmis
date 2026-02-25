@@ -24,15 +24,15 @@ This guide explains how to deploy the Mimmis application to a Kubernetes cluster
 
 4. **Container Image** for the backend API
    ```bash
-   # Build the Docker image
+   # Build the Docker image (using Harbor)
    cd be
-   docker build -t your-registry/mimmis-api:latest .
+   docker build -t your-registry/project/mimmis-api:latest .
    
    # Push to your container registry
-   docker push your-registry/mimmis-api:latest
+   docker push your-registry/project/mimmis-api:latest
    
    # Update the image in kubernetes.yaml (line ~187)
-   # image: your-registry/mimmis-api:latest
+   # image: your-registry/project/mimmis-api:latest
    ```
 
 5. **(Optional) cert-manager** for automatic SSL certificates
