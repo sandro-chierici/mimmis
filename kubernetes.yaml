@@ -36,7 +36,7 @@ stringData:
   POSTGRES_DB: "mimmis"
   # pgAdmin credentials
   PGADMIN_DEFAULT_EMAIL: "admin@mimmis.local"
-  PGADMIN_DEFAULT_PASSWORD: "changeme_pgadmin"
+  PGADMIN_DEFAULT_PASSWORD: "SuperSecret"
 
 ---
 # ConfigMap for pgAdmin server configuration
@@ -102,6 +102,7 @@ spec:
       containers:
       - name: postgres
         image: postgres:16-alpine
+        imagePullPolicy: IfNotPresent        
         ports:
         - containerPort: 5432
           name: postgres
@@ -124,6 +125,7 @@ spec:
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
+          subPath: postgres
         livenessProbe:
           exec:
             command:
@@ -179,121 +181,121 @@ spec:
   selector:
     app: postgres
 
----
-# PersistentVolumeClaim for pgAdmin data
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: pgadmin-pvc
-  namespace: mimmis
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
+# ---
+# # PersistentVolumeClaim for pgAdmin data
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: pgadmin-pvc
+#   namespace: mimmis
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 1Gi
   # storageClassName: standard  # Uncomment and set your storage class
 
----
-# pgAdmin Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: pgadmin
-  namespace: mimmis
-  labels:
-    app: pgadmin
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: pgadmin
-  template:
-    metadata:
-      labels:
-        app: pgadmin
-    spec:
-      containers:
-      - name: pgadmin
-        image: dpage/pgadmin4:latest
-        ports:
-        - containerPort: 80
-          name: http
-        env:
-        - name: PGADMIN_DEFAULT_EMAIL
-          valueFrom:
-            secretKeyRef:
-              name: mimmis-secret
-              key: PGADMIN_DEFAULT_EMAIL
-        - name: PGADMIN_DEFAULT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mimmis-secret
-              key: PGADMIN_DEFAULT_PASSWORD
-        - name: PGADMIN_CONFIG_SERVER_MODE
-          value: "True"
-        - name: PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED
-          value: "False"
-        volumeMounts:
-        - name: pgadmin-storage
-          mountPath: /var/lib/pgadmin
-        - name: pgadmin-config
-          mountPath: /pgadmin4/servers.json
-          subPath: servers.json
-          readOnly: true
-        - name: pgadmin-config
-          mountPath: /pgpass
-          subPath: pgpass
-          readOnly: true
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        readinessProbe:
-          httpGet:
-            path: /misc/ping
-            port: 80
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        livenessProbe:
-          httpGet:
-            path: /misc/ping
-            port: 80
-          initialDelaySeconds: 60
-          periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 3
-      volumes:
-      - name: pgadmin-storage
-        persistentVolumeClaim:
-          claimName: pgadmin-pvc
-      - name: pgadmin-config
-        configMap:
-          name: pgadmin-config
+# ---
+# # pgAdmin Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: pgadmin
+#   namespace: mimmis
+#   labels:
+#     app: pgadmin
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: pgadmin
+#   template:
+#     metadata:
+#       labels:
+#         app: pgadmin
+#     spec:
+#       containers:
+#       - name: pgadmin
+#         image: dpage/pgadmin4:latest
+#         ports:
+#         - containerPort: 80
+#           name: http
+#         env:
+#         - name: PGADMIN_DEFAULT_EMAIL
+#           valueFrom:
+#             secretKeyRef:
+#               name: mimmis-secret
+#               key: PGADMIN_DEFAULT_EMAIL
+#         - name: PGADMIN_DEFAULT_PASSWORD
+#           valueFrom:
+#             secretKeyRef:
+#               name: mimmis-secret
+#               key: PGADMIN_DEFAULT_PASSWORD
+#         - name: PGADMIN_CONFIG_SERVER_MODE
+#           value: "True"
+#         - name: PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED
+#           value: "False"
+#         volumeMounts:
+#         - name: pgadmin-storage
+#           mountPath: /var/lib/pgadmin
+#         - name: pgadmin-config
+#           mountPath: /pgadmin4/servers.json
+#           subPath: servers.json
+#           readOnly: true
+#         - name: pgadmin-config
+#           mountPath: /pgpass
+#           subPath: pgpass
+#           readOnly: true
+#         resources:
+#           requests:
+#             memory: "128Mi"
+#             cpu: "100m"
+#           limits:
+#             memory: "512Mi"
+#             cpu: "500m"
+#         readinessProbe:
+#           httpGet:
+#             path: /misc/ping
+#             port: 80
+#           initialDelaySeconds: 30
+#           periodSeconds: 10
+#           timeoutSeconds: 5
+#           failureThreshold: 3
+#         livenessProbe:
+#           httpGet:
+#             path: /misc/ping
+#             port: 80
+#           initialDelaySeconds: 60
+#           periodSeconds: 30
+#           timeoutSeconds: 5
+#           failureThreshold: 3
+#       volumes:
+#       - name: pgadmin-storage
+#         persistentVolumeClaim:
+#           claimName: pgadmin-pvc
+#       - name: pgadmin-config
+#         configMap:
+#           name: pgadmin-config
 
----
-# pgAdmin Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: pgadmin-service
-  namespace: mimmis
-  labels:
-    app: pgadmin
-spec:
-  type: ClusterIP
-  ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-    name: http
-  selector:
-    app: pgadmin
+# ---
+# # pgAdmin Service
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: pgadmin-service
+#   namespace: mimmis
+#   labels:
+#     app: pgadmin
+# spec:
+#   type: ClusterIP
+#   ports:
+#   - port: 80
+#     targetPort: 80
+#     protocol: TCP
+#     name: http
+#   selector:
+#     app: pgadmin
 
 ---
 # Backend API Deployment (3 replicas)
@@ -330,6 +332,7 @@ spec:
       containers:
       - name: api
         image: ha-pub.mxnhd3k7jxkm1j3.itbg.svcff.mycloudplatform.cloud/mimmis/mimmis-api:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 6000
           name: http
@@ -437,7 +440,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: mimmis-ingress
-  namespace: mimmis
   annotations:
     # === SSL/TLS TERMINATION CONFIGURATION ===
     # Force all HTTP traffic to redirect to HTTPS (301 permanent redirect)
@@ -511,12 +513,12 @@ spec:
   # 3. HTTP requests are automatically redirected to HTTPS (see annotations)
   tls:
   - hosts:
-    - api.yourdomain.com  # Replace with your actual domain
+    - "api.mimmis.it"  # Replace with your actual domain
     secretName: mimmis-tls-secret  # TLS certificate stored here
   
   # === ROUTING RULES ===
   rules:
-  - host: api.yourdomain.com  # Replace with your actual domain
+  - host: "api.mimmis.it"  # Replace with your actual domain
     http:
       paths:
       # pgAdmin UI - accessible at https://api.yourdomain.com/pgadmin/
@@ -537,51 +539,7 @@ spec:
               number: 80  # Backend service uses HTTP (SSL already terminated)
 
 ---
-# HorizontalPodAutoscaler for API (optional but recommended)
-# apiVersion: autoscaling/v2
-# kind: HorizontalPodAutoscaler
-# metadata:
-#   name: mimmis-api-hpa
-#   namespace: mimmis
-# spec:
-#   scaleTargetRef:
-#     apiVersion: apps/v1
-#     kind: Deployment
-#     name: mimmis-api
-#   minReplicas: 3
-#   maxReplicas: 10
-#   metrics:
-#   - type: Resource
-#     resource:
-#       name: cpu
-#       target:
-#         type: Utilization
-#         averageUtilization: 70
-#   - type: Resource
-#     resource:
-#       name: memory
-#       target:
-#         type: Utilization
-#         averageUtilization: 80
-#   behavior:
-#     scaleDown:
-#       stabilizationWindowSeconds: 300
-#       policies:
-#       - type: Percent
-#         value: 50
-#         periodSeconds: 60
-#     scaleUp:
-#       stabilizationWindowSeconds: 0
-#       policies:
-#       - type: Percent
-#         value: 100
-#         periodSeconds: 30
-#       - type: Pods
-#         value: 2
-#         periodSeconds: 30
-#       selectPolicy: Max
 
----
 # PodDisruptionBudget to ensure availability during updates
 apiVersion: policy/v1
 kind: PodDisruptionBudget
