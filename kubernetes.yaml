@@ -511,15 +511,14 @@ spec:
   # 1. Client -> HTTPS (443) -> Ingress (SSL terminates)
   # 2. Ingress -> HTTP (80) -> mimmis-api-service
   # 3. HTTP requests are automatically redirected to HTTPS (see annotations)
-  tls:
-  - hosts:
-    - "api.mimmis.it"  # Replace with your actual domain
-    secretName: mimmis-tls-secret  # TLS certificate stored here
+  # tls:
+  # - hosts:
+  #   - "api.mimmis.it"  # Replace with your actual domain
+  #   secretName: mimmis-tls-secret  # TLS certificate stored here
   
   # === ROUTING RULES ===
   rules:
-  - host: "api.mimmis.it"  # Replace with your actual domain
-    http:
+  - http:
       paths:
       # pgAdmin UI - accessible at https://api.yourdomain.com/pgadmin/
       - path: /pgadmin
