@@ -578,7 +578,7 @@ spec:
   # Allow DNS
   - to:
     - namespaceSelector: {}
-      podSelector:
+    - podSelector:
         matchLabels:
           k8s-app: kube-dns
     ports:
