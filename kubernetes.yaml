@@ -414,6 +414,75 @@ spec:
                   - mimmis-api
               topologyKey: kubernetes.io/hostname
 
+# ---
+# ConfigMap for ModSecurity WAF rules
+# Applied globally by the ingress-nginx controller via the modsecurity-snippet key
+# in the ingress-nginx-controller ConfigMap (see below).
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: mimmis-modsecurity
+#   namespace: mimmis
+# data:
+#   modsecurity.conf: |
+#     SecRuleEngine On
+#     SecRequestBodyAccess On
+#     SecAuditEngine RelevantOnly
+#     SecAuditLogParts ABIJDEFHZ
+#     SecAuditLog /dev/stdout
+#     # Block SQL injection attempts
+#     SecRule ARGS "@detectSQLi" "id:1000,phase:2,deny,status:403,msg:'SQL Injection Detected'"
+#     # Block XSS attempts
+#     SecRule ARGS "@detectXSS" "id:1001,phase:2,deny,status:403,msg:'XSS Attack Detected'"
+#     # Rate limiting per IP (100 requests per minute)
+#     SecAction "id:1002,phase:1,nolog,pass,initcol:ip=%{REMOTE_ADDR},setvar:ip.requests=+1,expirevar:ip.requests=60"
+#     SecRule IP:REQUESTS "@gt 100" "id:1003,phase:1,deny,status:429,msg:'Rate limit exceeded'"
+
+---
+# ConfigMap for security response headers
+# Applied globally by the ingress-nginx controller via add-headers.
+# To activate, patch the ingress-nginx controller ConfigMap:
+#   kubectl patch configmap ingress-nginx-controller -n ingress-nginx \
+#     --type merge -p '{"data":{"add-headers":"mimmis/mimmis-security-headers"}}'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mimmis-security-headers
+  namespace: mimmis
+data:
+  Strict-Transport-Security: "max-age=31536000; includeSubDomains; preload"
+  X-Frame-Options: "DENY"
+  X-Content-Type-Options: "nosniff"
+  X-XSS-Protection: "1; mode=block"
+  Referrer-Policy: "strict-origin-when-cross-origin"
+  Content-Security-Policy: "default-src 'self'"
+  X-Forwarded-Proto: "https"
+
+---
+# Patch for the ingress-nginx controller ConfigMap
+# Wires the security-headers ConfigMap so nginx injects them on every response.
+# Also activates the ModSecurity rules from mimmis-modsecurity ConfigMap.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+data:
+  add-headers: "mimmis/mimmis-security-headers"
+  modsecurity-snippet: |
+    SecRuleEngine On
+    SecRequestBodyAccess On
+    SecAuditEngine RelevantOnly
+    SecAuditLogParts ABIJDEFHZ
+    SecAuditLog /dev/stdout
+    # Block SQL injection attempts
+    SecRule ARGS "@detectSQLi" "id:1000,phase:2,deny,status:403,msg:'SQL Injection Detected'"
+    # Block XSS attempts
+    SecRule ARGS "@detectXSS" "id:1001,phase:2,deny,status:403,msg:'XSS Attack Detected'"
+    # Rate limiting per IP (100 requests per minute)
+    SecAction "id:1002,phase:1,nolog,pass,initcol:ip=%{REMOTE_ADDR},setvar:ip.requests=+1,expirevar:ip.requests=60"
+    SecRule IP:REQUESTS "@gt 100" "id:1003,phase:1,deny,status:429,msg:'Rate limit exceeded'"
+
 ---
 # Backend API Service
 apiVersion: v1
@@ -440,6 +509,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: mimmis-ingress
+  namespace: mimmis
   annotations:
     # === SSL/TLS TERMINATION CONFIGURATION ===
     # Force all HTTP traffic to redirect to HTTPS (301 permanent redirect)
@@ -461,19 +531,8 @@ metadata:
     nginx.ingress.kubernetes.io/modsecurity-transaction-id: "$request_id"
     
     # Additional WAF configuration
-    nginx.ingress.kubernetes.io/modsecurity-snippet: |
-      SecRuleEngine On
-      SecRequestBodyAccess On
-      SecAuditEngine RelevantOnly
-      SecAuditLogParts ABIJDEFHZ
-      SecAuditLog /dev/stdout
-      # Block SQL injection attempts
-      SecRule ARGS "@detectSQLi" "id:1000,phase:2,deny,status:403,msg:'SQL Injection Detected'"
-      # Block XSS attempts
-      SecRule ARGS "@detectXSS" "id:1001,phase:2,deny,status:403,msg:'XSS Attack Detected'"
-      # Rate limiting per IP (100 requests per minute)
-      SecAction "id:1002,phase:1,nolog,pass,initcol:ip=%{REMOTE_ADDR},setvar:ip.requests=+1,expirevar:ip.requests=60"
-      SecRule IP:REQUESTS "@gt 100" "id:1003,phase:1,deny,status:429,msg:'Rate limit exceeded'"
+    # ModSecurity rules are managed via the mimmis-modsecurity ConfigMap,
+    # injected globally through modsecurity-snippet in ingress-nginx-controller ConfigMap.
     
     # === RATE LIMITING ===
     nginx.ingress.kubernetes.io/limit-rps: "10"
@@ -488,21 +547,8 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
     
     # === SECURITY HEADERS ===
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      # Enforce HTTPS with HSTS (HTTP Strict Transport Security)
-      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
-      # Prevent clickjacking
-      more_set_headers "X-Frame-Options: DENY";
-      # Prevent MIME type sniffing
-      more_set_headers "X-Content-Type-Options: nosniff";
-      # XSS protection
-      more_set_headers "X-XSS-Protection: 1; mode=block";
-      # Referrer policy
-      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
-      # Content Security Policy
-      more_set_headers "Content-Security-Policy: default-src 'self'";
-      # Indicate HTTPS usage
-      more_set_headers "X-Forwarded-Proto: https";
+    # Security headers are injected globally by the ingress-nginx controller
+    # via the mimmis-security-headers ConfigMap (add-headers in ingress-nginx-controller ConfigMap).
 spec:
   ingressClassName: nginx
   
