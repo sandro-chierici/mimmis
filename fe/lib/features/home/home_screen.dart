@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'home_notifier.dart';
 import 'widgets/cost_preview_list.dart';
+
 import 'widgets/date_header.dart';
 import 'widgets/date_picker_sheet.dart';
 import 'widgets/monthly_summary.dart';
@@ -61,13 +62,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     actions: [
                       if (n.isLoading)
                         const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(horizontal: 8),
                           child: SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
+                      IconButton(
+                        tooltip: 'User Manager',
+                        icon: const Icon(Icons.manage_accounts_rounded),
+                        onPressed: () => _navigateToUserManager(context, n),
+                      ),
                     ],
                   ),
 
@@ -132,6 +138,14 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  Future<void> _navigateToUserManager(
+      BuildContext context, HomeNotifier n) async {
+    await context.push('/user-manager');
+    if (context.mounted) {
+      await n.reloadUsers();
+    }
   }
 
   Future<void> _pickDatePart(

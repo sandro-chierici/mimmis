@@ -103,6 +103,28 @@ class HomeNotifier extends ChangeNotifier {
   /// Refresh both users and costs from the network.
   Future<void> refresh() => init();
 
+  /// Reload only the user list (e.g. after User Manager makes changes).
+  Future<void> reloadUsers() async {
+    _setLoading(true);
+    try {
+      _users = await _userRepo.getAll();
+      // Re-validate that the selected user still exists.
+      if (_selectedUser != null) {
+        _selectedUser = _users.cast<User?>().firstWhere(
+          (u) => u?.userId == _selectedUser!.userId,
+          orElse: () => null,
+        );
+      }
+      _selectedUser ??= _users.isNotEmpty ? _users.first : null;
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+      log('HomeNotifier.reloadUsers: $e', name: 'HomeNotifier');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Reload only costs (e.g. after adding a new cost entry).
   Future<void> reloadCosts() async {
     _setLoading(true);
