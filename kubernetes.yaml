@@ -554,21 +554,21 @@ spec:
   - http:
       paths:
       # pgAdmin UI - accessible at https://api.yourdomain.com/pgadmin/
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: pgadmin-service
-            port:
-              number: 80
-      # Main API - default path
       # - path: /
       #   pathType: Prefix
       #   backend:
       #     service:
-      #       name: mimmis-api-service
+      #       name: pgadmin-service
       #       port:
-      #         number: 80  # Backend service uses HTTP (SSL already terminated)
+      #         number: 80
+      # Main API - default path
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mimmis-api-service
+            port:
+              number: 80  # Backend service uses HTTP (SSL already terminated)
 
 ---
 
