@@ -509,6 +509,7 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If using cert-manager
     
     # === API GATEWAY AND ROUTING ===
+    nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /
     
     # === WAF - ModSecurity with OWASP Core Rule Set ===
@@ -553,7 +554,7 @@ spec:
   - http:
       paths:
       # pgAdmin UI - accessible at https://api.yourdomain.com/pgadmin/
-      - path: /pgadmin
+      - path: /
         pathType: Prefix
         backend:
           service:
@@ -561,13 +562,13 @@ spec:
             port:
               number: 80
       # Main API - default path
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: mimmis-api-service
-            port:
-              number: 80  # Backend service uses HTTP (SSL already terminated)
+      # - path: /
+      #   pathType: Prefix
+      #   backend:
+      #     service:
+      #       name: mimmis-api-service
+      #       port:
+      #         number: 80  # Backend service uses HTTP (SSL already terminated)
 
 ---
 
